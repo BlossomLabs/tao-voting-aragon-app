@@ -1,6 +1,5 @@
-const agreementDeployer = require('@aragon/apps-agreement/test/helpers/utils/deployer')(web3, artifacts)
-const { ANY_ENTITY, getInstalledApp } = require('@aragon/contract-helpers-test/src/aragon-os')
-const { ZERO_ADDRESS, NOW, ONE_DAY, pct16, getEventArgument } = require('@aragon/contract-helpers-test')
+const { ANY_ENTITY, getInstalledApp } = require('@1hive/contract-helpers-test/src/aragon-os')
+const { ZERO_ADDRESS, NOW, ONE_DAY, pct16, getEventArgument } = require('@1hive/contract-helpers-test')
 
 const DEFAULT_VOTING_INITIALIZATION_PARAMS = {
   appId: '0x1234cafe1234cafe1234cafe1234cafe1234cafe1234cafe1234cafe1234cafe',
@@ -54,10 +53,6 @@ class VotingDeployer {
     return this.previousDeploy.voting
   }
 
-  get agreement() {
-    return this.previousDeploy.agreement
-  }
-
   get token() {
     return this.previousDeploy.token
   }
@@ -77,15 +72,6 @@ class VotingDeployer {
 
     await this.voting.initialize(token.address, voteDuration, requiredSupport, minimumAcceptanceQuorum, delegatedVotingPeriod, quietEndingPeriod, quietEndingExtension, executionDelay)
 
-    if (options.agreement !== false) {
-      const owner = options.owner || await this._getSender()
-      let { collateralToken, actionCollateral, challengeCollateral, challengeDuration } = { ...DEFAULT_VOTING_INITIALIZATION_PARAMS, ...options }
-      if (!collateralToken.address) collateralToken = await agreementDeployer.deployCollateralToken(collateralToken)
-
-      await this.agreement.activate({ disputable: this.voting, collateralToken, actionCollateral, challengeCollateral, challengeDuration, from: owner })
-      this.previousDeploy = { ...this.previousDeploy, collateralToken }
-    }
-
     return this.voting
   }
 
@@ -101,32 +87,16 @@ class VotingDeployer {
     const restrictedPermissions = ['CHANGE_VOTE_TIME_ROLE', 'CHANGE_SUPPORT_ROLE', 'CHANGE_QUORUM_ROLE', 'CHANGE_DELEGATED_VOTING_PERIOD_ROLE', 'CHANGE_EXECUTION_DELAY_ROLE', 'CHANGE_QUIET_ENDING_ROLE']
     await this._createPermissions(voting, restrictedPermissions, owner)
 
-    const openPermissions = ['CREATE_VOTES_ROLE', 'CHALLENGE_ROLE']
+    const openPermissions = ['CREATE_VOTES_ROLE']
     await this._createPermissions(voting, openPermissions, ANY_ENTITY, owner)
-
-    if (!this.agreement) await this.deployAgreement(options)
-    await this._createPermissions(voting, ['SET_AGREEMENT_ROLE'], this.agreement.address, owner)
 
     if (currentTimestamp) await voting.mockSetTimestamp(currentTimestamp)
     this.previousDeploy = { ...this.previousDeploy, voting }
     return voting
   }
 
-  async deployAgreement(options = {}) {
-    const owner = options.owner || await this._getSender()
-    if (!this.dao) await this.deployDAO(owner)
-    if (!this.base) await this.deployBase(options)
-
-    const { currentTimestamp } = { ...DEFAULT_VOTING_INITIALIZATION_PARAMS, ...options }
-    agreementDeployer.previousDeploy = { ...agreementDeployer.previousDeploy, dao: this.dao, acl: this.acl, owner }
-    const agreement = await agreementDeployer.deployAndInitializeAgreementWrapper({ ...options, owner, currentTimestamp })
-
-    this.previousDeploy = { ...this.previousDeploy, agreement }
-    return agreement
-  }
-
   async deployBase() {
-    const Voting = this._getContract('DisputableVotingMock')
+    const Voting = this._getContract('TaoVotingMock')
     const base = await Voting.new()
     this.previousDeploy = { ...this.previousDeploy, base }
     return base

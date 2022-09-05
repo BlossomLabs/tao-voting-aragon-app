@@ -2,11 +2,11 @@ const deployer = require('../helpers/deployer')(web3, artifacts)
 const { VOTING_ERRORS } = require('../helpers/errors')
 const { VOTER_STATE, createVote, voteScript, getVoteState } = require('../helpers/voting')
 
-const { NOW, ONE_DAY, pct16, bigExp } = require('@aragon/contract-helpers-test')
-const { assertRevert, assertBn, assertEvent, assertAmountOfEvents } = require('@aragon/contract-helpers-test/src/asserts')
+const { NOW, ONE_DAY, pct16, bigExp } = require('@1hive/contract-helpers-test')
+const { assertRevert, assertBn, assertEvent, assertAmountOfEvents } = require('@1hive/contract-helpers-test/src/asserts')
 
 contract('Voting', ([_, owner, holder10, holder20, holder30, holder40, holder50]) => {
-  let voting, agreement, token
+  let voting, token
 
   const VOTE_DURATION = 5 * ONE_DAY
   const QUIET_ENDING_PERIOD = 2 * ONE_DAY
@@ -25,7 +25,6 @@ contract('Voting', ([_, owner, holder10, holder20, holder30, holder40, holder50]
 
   beforeEach('deploy voting', async () => {
     voting = await deployer.deployAndInitialize({ owner, currentTimestamp: NOW, minimumAcceptanceQuorum: MINIMUM_ACCEPTANCE_QUORUM, requiredSupport: REQUIRED_SUPPORT, voteDuration: VOTE_DURATION, quietEndingPeriod: QUIET_ENDING_PERIOD, quietEndingExtension: QUIET_ENDING_EXTENSION })
-    agreement = deployer.agreement
   })
 
   describe('quiet ending', () => {
@@ -100,13 +99,6 @@ contract('Voting', ([_, owner, holder10, holder20, holder30, holder40, holder50]
           await assertRevert(voting.executeVote(voteId, script), VOTING_ERRORS.VOTING_CANNOT_EXECUTE)
         })
 
-        it('does not allow closing the vote', async () => {
-          assert.isFalse(await voting.canClose(voteId), 'vote can be closed')
-
-          const { actionId } = await voting.getVote(voteId)
-          await assertRevert(agreement.close(actionId), 'AGR_CANNOT_CLOSE_ACTION')
-        })
-
         context('when no one votes during the quiet ending extension', () => {
           beforeEach('move after the quiet ending period', async () => {
             await voting.mockIncreaseTime(QUIET_ENDING_EXTENSION + 1)
@@ -134,33 +126,10 @@ contract('Voting', ([_, owner, holder10, holder20, holder30, holder40, holder50]
               await voting.executeVote(voteId, script)
               assertBn(await executionTarget.counter(), 1, 'vote was not executed')
             })
-
-            it('allows closing the vote and executing after it', async () => {
-              assert.isTrue(await voting.canClose(voteId), 'vote cannot be closed')
-
-              const { actionId } = await voting.getVote(voteId)
-              const receipt = await agreement.close(actionId)
-
-              assertEvent(receipt, 'ActionClosed', { decodeForAbi: agreement.abi, expectedArgs: { actionId } })
-
-              assert.isTrue(await voting.canExecute(voteId), 'vote cannot be executed')
-
-              await voting.executeVote(voteId, script)
-              assertBn(await executionTarget.counter(), 1, 'vote was not executed')
-            })
           } else {
             it('does not allow executing the vote after the extension', async () => {
               assert.isFalse(await voting.canExecute(voteId), 'vote can be executed')
               await assertRevert(voting.executeVote(voteId, script), VOTING_ERRORS.VOTING_CANNOT_EXECUTE)
-            })
-
-            it('allows closing the vote', async () => {
-              assert.isTrue(await voting.canClose(voteId), 'vote cannot be closed')
-
-              const { actionId } = await voting.getVote(voteId)
-              const receipt = await agreement.close(actionId)
-
-              assertEvent(receipt, 'ActionClosed', { decodeForAbi: agreement.abi, expectedArgs: { actionId } })
             })
           }
         })

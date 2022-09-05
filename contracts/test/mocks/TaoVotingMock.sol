@@ -1,15 +1,15 @@
 pragma solidity 0.4.24;
 
-import "../../DisputableVoting.sol";
-import "@aragon/contract-helpers-test/contracts/0.4/aragonOS/TimeHelpersMock.sol";
+import "../../TaoVoting.sol";
+import "@1hive/contract-helpers-test/contracts/0.4/aragonOS/TimeHelpersMock.sol";
 
 
 /**
-* @dev This mock exposes a few functions to test edge cases of the disputable voting app.
+* @dev This mock exposes a few functions to test edge cases of the tao voting app.
 *      In particular it provides a function to simulate a token transfer + vote in the same block.
 *      It also exposes the internal function for computing vote pcts to allow it to be explicitly tested.
 */
-contract DisputableVotingMock is DisputableVoting, TimeHelpersMock {
+contract TaoVotingMock is TaoVoting, TimeHelpersMock {
     // Mint a token and create a vote in the same transaction to test snapshot block values are correct
     function newTokenAndVote(address _holder, uint256 _tokenAmount, bytes _context) external returns (uint256) {
         token.generateTokens(_holder, _tokenAmount);

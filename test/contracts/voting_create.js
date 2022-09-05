@@ -2,11 +2,11 @@ const deployer = require('../helpers/deployer')(web3, artifacts)
 const { ARAGON_OS_ERRORS, VOTING_ERRORS } = require('../helpers/errors')
 const { createVote, voteScript, getVoteState } = require('../helpers/voting')
 
-const { EMPTY_CALLS_SCRIPT } = require('@aragon/contract-helpers-test/src/aragon-os')
-const { ONE_DAY, bigExp, pct16, getEventArgument } = require('@aragon/contract-helpers-test')
-const { assertBn, assertRevert, assertEvent, assertAmountOfEvents } = require('@aragon/contract-helpers-test/src/asserts')
+const { EMPTY_CALLS_SCRIPT } = require('@1hive/contract-helpers-test/src/aragon-os')
+const { ONE_DAY, bigExp, pct16, getEventArgument } = require('@1hive/contract-helpers-test')
+const { assertBn, assertRevert, assertEvent, assertAmountOfEvents } = require('@1hive/contract-helpers-test/src/asserts')
 
-contract('Voting', ([_, owner, holder1, holder2, holder20, holder29, holder51, agreement]) => {
+contract('Voting', ([_, owner, holder1, holder2, holder20, holder29, holder51]) => {
   let voting, token
 
   const CONTEXT = '0xabcdef'
@@ -33,7 +33,7 @@ contract('Voting', ([_, owner, holder1, holder2, holder20, holder29, holder51, a
 
       it('fails to forward actions', async () => {
         const { script } = await voteScript()
-        await assertRevert(voting.forward(script, CONTEXT, { from: holder51 }), VOTING_ERRORS.VOTING_CANNOT_FORWARD)
+        await assertRevert(voting.forward(script, { from: holder51 }), VOTING_ERRORS.VOTING_CANNOT_FORWARD)
       })
     })
 
@@ -64,10 +64,10 @@ contract('Voting', ([_, owner, holder1, holder2, holder20, holder29, holder51, a
           })
 
           it('can be forwarded', async () => {
-            const receipt = await voting.forward(script, CONTEXT, { from: holder51 })
+            const receipt = await voting.forward(script, { from: holder51 })
 
             assertAmountOfEvents(receipt, 'StartVote')
-            assertEvent(receipt, 'StartVote', { expectedArgs: { voteId: 1, creator: holder51, context: CONTEXT, executionScript: script } })
+            assertEvent(receipt, 'StartVote', { expectedArgs: { voteId: 1, creator: holder51, context: null, executionScript: script } })
           })
 
           it('emits an event', async () => {
@@ -77,7 +77,7 @@ contract('Voting', ([_, owner, holder1, holder2, holder20, holder29, holder51, a
 
           it('has correct state', async () => {
             const currentSettingId = await voting.getCurrentSettingId()
-            const { isOpen, isExecuted, snapshotBlock, settingId, yeas, nays, totalPower, pausedAt, pauseDuration, quietEndingExtensionDuration, executionScriptHash } = await getVoteState(voting, voteId)
+            const { isOpen, isExecuted, snapshotBlock, settingId, yeas, nays, totalPower, quietEndingExtensionDuration, executionScriptHash } = await getVoteState(voting, voteId)
 
             assert.isTrue(isOpen, 'vote should be open')
             assert.isFalse(isExecuted, 'vote should not be executed')
@@ -86,8 +86,6 @@ contract('Voting', ([_, owner, holder1, holder2, holder20, holder29, holder51, a
             assertBn(yeas, 0, 'initial yea should be 0')
             assertBn(nays, 0, 'initial nay should be 0')
             assertBn(totalPower, bigExp(100, 18), 'total voting power should be 100')
-            assertBn(pausedAt, 0, 'paused at does not match')
-            assertBn(pauseDuration, 0, 'pause duration does not match')
             assertBn(quietEndingExtensionDuration, 0, 'quiet ending extended seconds does not match')
             assert.equal(executionScriptHash, web3.utils.sha3(script), 'script should be correct')
           })

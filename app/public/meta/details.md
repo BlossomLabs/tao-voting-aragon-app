@@ -1,4 +1,4 @@
-The Disputable voting app is used to create and participate in votes. Votes can be linked to an action, such as issuing a new token or transferring funds, or be purely informative.
+The Tao voting app is used to create and participate in votes. Votes can be linked to an action, such as issuing a new token or transferring funds, or be purely informative.
 
 ## Features
 

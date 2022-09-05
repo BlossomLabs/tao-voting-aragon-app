@@ -1,8 +1,8 @@
-# Disputable Voting
+# Tao Voting
 
 #### 🛠️ Project stage: development
 
-The DisputableVoting app is still in development phase and aspects of the mechanism are still being designed and implemented.
+The TaoVoting app is still in development phase and aspects of the mechanism are still being designed and implemented.
 
 A frontend for the Aragon client has been started in [`app/`](app/) but is not yet production-ready.
 

@@ -4,14 +4,14 @@
 
 pragma solidity 0.4.24;
 
-import "@aragon/os/contracts/apps/disputable/DisputableAragonApp.sol";
-import "@aragon/os/contracts/forwarding/IForwarderWithContext.sol";
+import "@aragon/os/contracts/apps/AragonApp.sol";
+import "@aragon/os/contracts/common/IForwarder.sol";
 import "@aragon/os/contracts/lib/math/SafeMath.sol";
 import "@aragon/os/contracts/lib/math/SafeMath64.sol";
 import "@aragon/minime/contracts/MiniMeToken.sol";
 
 
-contract DisputableVoting is IForwarderWithContext, DisputableAragonApp {
+contract TaoVoting is AragonApp, IForwarder {
     using SafeMath for uint256;
     using SafeMath64 for uint64;
 
@@ -58,21 +58,17 @@ contract DisputableVoting is IForwarderWithContext, DisputableAragonApp {
     string private constant ERROR_NOT_REPRESENTATIVE = "VOTING_NOT_REPRESENTATIVE";
     string private constant ERROR_PAST_REPRESENTATIVE_VOTING_WINDOW = "VOTING_PAST_REP_VOTING_WINDOW";
     string private constant ERROR_DELEGATES_EXCEEDS_MAX_LEN = "VOTING_DELEGATES_EXCEEDS_MAX_LEN";
-    string private constant ERROR_CANNOT_PAUSE_VOTE = "VOTING_CANNOT_PAUSE_VOTE";
-    string private constant ERROR_VOTE_NOT_PAUSED = "VOTING_VOTE_NOT_PAUSED";
     string private constant ERROR_CANNOT_EXECUTE = "VOTING_CANNOT_EXECUTE";
 
     enum VoterState { Absent, Yea, Nay }
 
     enum VoteStatus {
         Normal,                         // A vote in a "normal" state of operation (not one of the below)--note that this state is not related to the vote being open
-        Paused,                         // A vote that is paused due to it having an open challenge or dispute
-        Cancelled,                      // A vote that has been explicitly cancelled due to a challenge or dispute
         Executed                        // A vote that has been executed
     }
 
     struct Setting {
-        // "Base" duration of each vote -- vote lifespans may be adjusted by pause and extension durations
+        // "Base" duration of each vote -- vote lifespans may be adjusted by extension durations
         uint64 voteTime;
 
         // Required voter support % (yes power / voted power) for a vote to pass
@@ -115,10 +111,7 @@ contract DisputableVoting is IForwarderWithContext, DisputableAragonApp {
         VoteStatus status;                                  // Status of the vote
 
         uint256 settingId;                                  // Identification number of the setting applicable to the vote
-        uint256 actionId;                                   // Identification number of the associated disputable action on the linked Agreement
 
-        uint64 pausedAt;                                    // Datetime when the vote was paused
-        uint64 pauseDuration;                               // Duration of the pause (only updated once resumed)
         uint64 quietEndingExtensionDuration;                // Duration a vote was extended due to non-quiet endings
         VoterState quietEndingSnapshotSupport;              // Snapshot of the vote's support at the beginning of the first quiet ending period
 
@@ -144,9 +137,6 @@ contract DisputableVoting is IForwarderWithContext, DisputableAragonApp {
     event ChangeExecutionDelay(uint64 executionDelay);
 
     event StartVote(uint256 indexed voteId, address indexed creator, bytes context, bytes executionScript);
-    event PauseVote(uint256 indexed voteId, uint256 indexed challengeId);
-    event ResumeVote(uint256 indexed voteId);
-    event CancelVote(uint256 indexed voteId);
     event ExecuteVote(uint256 indexed voteId);
     event QuietEndingExtendVote(uint256 indexed voteId, bool passing);
 
@@ -155,7 +145,7 @@ contract DisputableVoting is IForwarderWithContext, DisputableAragonApp {
     event ProxyVoteFailure(uint256 indexed voteId, address indexed voter, address indexed representative);
 
     /**
-    * @notice Initialize Disputable Voting with `_token.symbol(): string` for governance, a voting duration of `@transformTime(_voteTime)`, minimum support of `@formatPct(_supportRequiredPct)`%, minimum acceptance quorum of `@formatPct(_minAcceptQuorumPct)`%, a delegated voting period of `@transformTime(_delegatedVotingPeriod), and a execution delay of `@transformTime(_executionDelay)`
+    * @notice Initialize Tao Voting with `_token.symbol(): string` for governance, a voting duration of `@transformTime(_voteTime)`, minimum support of `@formatPct(_supportRequiredPct)`%, minimum acceptance quorum of `@formatPct(_minAcceptQuorumPct)`%, a delegated voting period of `@transformTime(_delegatedVotingPeriod), and a execution delay of `@transformTime(_executionDelay)`
     * @param _token MiniMeToken Address that will be used as governance token
     * @param _voteTime Base duration a vote will be open for voting
     * @param _supportRequiredPct Required support % (yes power / voted power) for a vote to pass; expressed as a percentage of 10^18
@@ -255,7 +245,7 @@ contract DisputableVoting is IForwarderWithContext, DisputableAragonApp {
     /**
     * @notice Create a new vote about "`_context`"
     * @param _executionScript Action (encoded as an EVM script) that will be allowed to execute if the vote passes
-    * @param _context Additional context for the vote, also used as the disputable action's context on the linked Agreement
+    * @param _context Additional context for the vote
     * @return Identification number of the newly created vote
     */
     function newVote(bytes _executionScript, bytes _context) external auth(CREATE_VOTES_ROLE) returns (uint256) {
@@ -318,11 +308,7 @@ contract DisputableVoting is IForwarderWithContext, DisputableAragonApp {
         require(vote_.executionScriptHash == keccak256(_executionScript), ERROR_INVALID_EXECUTION_SCRIPT);
 
         vote_.status = VoteStatus.Executed;
-        _closeDisputableAction(vote_.actionId);
 
-        // IMPORTANT! The linked Agreement is not blacklisted on purpose
-        // It will be users responsibility to check the content of the EVMScripts submitted to the Disputable Voting app
-        // to make sure these are not performing any malicious actions in the Agreement (e.g. maliciously closing a different action)
         runScript(_executionScript, new bytes(0), new address[](0));
         emit ExecuteVote(_voteId);
     }
@@ -340,52 +326,30 @@ contract DisputableVoting is IForwarderWithContext, DisputableAragonApp {
 
     /**
     * @notice Create a vote to execute the desired action
-    * @dev IForwarderWithContext interface conformance.
-    *      This app (as a DisputableAragonApp) is required to be the initial step in the forwarding chain.
+    * @dev IForwarder interface conformance.
+    *      This app (as an AragonApp) is required to be the initial step in the forwarding chain.
     * @param _evmScript Action (encoded as an EVM script) that will be allowed to execute if the vote passes
-    * @param _context Additional context for the vote, also used as the disputable action's context on the linked Agreement
     */
-    function forward(bytes _evmScript, bytes _context) external {
-        require(_canForward(msg.sender, _evmScript), ERROR_CANNOT_FORWARD);
-        _newVote(_evmScript, _context);
+    function forward(bytes _evmScript) public {
+        require(canForward(msg.sender, _evmScript), ERROR_CANNOT_FORWARD);
+        _newVote(_evmScript, "");
     }
 
     // Forwarding getter fns
 
+    function isForwarder() external pure returns (bool) {
+        return true;
+    }
+
     /**
     * @dev Tell if an address can forward actions (by creating a vote)
-    *      IForwarderWithContext interface conformance
+    *      IForwarder interface conformance
     * @param _sender Address intending to forward an action
     * @param _evmScript EVM script being forwarded
     * @return True if the address is allowed create a vote containing the action
     */
-    function canForward(address _sender, bytes _evmScript) external view returns (bool) {
+    function canForward(address _sender, bytes _evmScript) public view returns (bool) {
         return _canForward(_sender, _evmScript);
-    }
-
-    // Disputable getter fns
-
-    /**
-    * @dev Tell if a vote can be challenged
-    *      Called by the linked Agreement when a challenge is requested for the associated vote
-    * @param _voteId Identification number of the vote being queried
-    * @return True if the vote can be challenged
-    */
-    function canChallenge(uint256 _voteId) external view returns (bool) {
-        Vote storage vote_ = _getVote(_voteId);
-        // Votes can only be challenged once
-        return vote_.pausedAt == 0 && _isVoteOpenForVoting(vote_, settings[vote_.settingId]);
-    }
-
-    /**
-    * @dev Tell if a vote can be closed
-    *      Called by the linked Agreement when the action associated with the vote is requested to be manually closed
-    * @param _voteId Identification number of the vote being queried
-    * @return True if the vote can be closed
-    */
-    function canClose(uint256 _voteId) external view returns (bool) {
-        Vote storage vote_ = _getVote(_voteId);
-        return (_isNormal(vote_) || _isExecuted(vote_)) && _hasEnded(vote_, settings[vote_.settingId]);
     }
 
     // Getter fns
@@ -438,9 +402,6 @@ contract DisputableVoting is IForwarderWithContext, DisputableAragonApp {
     * @return snapshotBlock Block number used to check voting power on attached token
     * @return status Status of the vote
     * @return settingId Identification number of the setting applicable to the vote
-    * @return actionId Identification number of the associated disputable action on the linked Agreement
-    * @return pausedAt Datetime when the vote was paused
-    * @return pauseDuration Duration of the pause (only updated once resumed)
     * @return quietEndingExtensionDuration Duration a vote was extended due to non-quiet endings
     * @return quietEndingSnapshotSupport Snapshot of the vote's support at the beginning of the first quiet ending period
     * @return executionScriptHash Hash of the EVM script attached to the vote
@@ -456,9 +417,6 @@ contract DisputableVoting is IForwarderWithContext, DisputableAragonApp {
             uint64 snapshotBlock,
             VoteStatus status,
             uint256 settingId,
-            uint256 actionId,
-            uint64 pausedAt,
-            uint64 pauseDuration,
             uint64 quietEndingExtensionDuration,
             VoterState quietEndingSnapshotSupport,
             bytes32 executionScriptHash
@@ -473,9 +431,6 @@ contract DisputableVoting is IForwarderWithContext, DisputableAragonApp {
         snapshotBlock = vote_.snapshotBlock;
         status = vote_.status;
         settingId = vote_.settingId;
-        actionId = vote_.actionId;
-        pausedAt = vote_.pausedAt;
-        pauseDuration = vote_.pauseDuration;
         quietEndingExtensionDuration = vote_.quietEndingExtensionDuration;
         quietEndingSnapshotSupport = vote_.quietEndingSnapshotSupport;
         executionScriptHash = vote_.executionScriptHash;
@@ -579,58 +534,6 @@ contract DisputableVoting is IForwarderWithContext, DisputableAragonApp {
     */
     function isRepresentativeOf(address _voter, address _representative) external view isInitialized returns (bool) {
         return _isRepresentativeOf(_voter, _representative);
-    }
-
-    // DisputableAragonApp callback implementations
-
-    /**
-    * @dev Received when a vote is challenged
-    * @param _voteId Identification number of the vote
-    * @param _challengeId Identification number of the challenge associated to the vote on the linked Agreement
-    */
-    function _onDisputableActionChallenged(uint256 _voteId, uint256 _challengeId, address /* _challenger */) internal {
-        Vote storage vote_ = _getVote(_voteId);
-        require(_isNormal(vote_), ERROR_CANNOT_PAUSE_VOTE);
-
-        vote_.status = VoteStatus.Paused;
-        vote_.pausedAt = getTimestamp64();
-        emit PauseVote(_voteId, _challengeId);
-    }
-
-    /**
-    * @dev Received when a vote was ruled in favour of the submitter
-    * @param _voteId Identification number of the vote
-    */
-    function _onDisputableActionAllowed(uint256 _voteId) internal {
-        Vote storage vote_ = _getVote(_voteId);
-        require(_isPaused(vote_), ERROR_VOTE_NOT_PAUSED);
-
-        vote_.status = VoteStatus.Normal;
-        vote_.pauseDuration = getTimestamp64().sub(vote_.pausedAt);
-        emit ResumeVote(_voteId);
-    }
-
-    /**
-    * @dev Received when a vote was ruled in favour of the challenger
-    * @param _voteId Identification number of the vote
-    */
-    function _onDisputableActionRejected(uint256 _voteId) internal {
-        Vote storage vote_ = _getVote(_voteId);
-        require(_isPaused(vote_), ERROR_VOTE_NOT_PAUSED);
-
-        vote_.status = VoteStatus.Cancelled;
-        vote_.pauseDuration = getTimestamp64().sub(vote_.pausedAt);
-        emit CancelVote(_voteId);
-    }
-
-    /**
-    * @dev Received when a vote was ruled as void
-    * @param _voteId Identification number of the vote
-    */
-    function _onDisputableActionVoided(uint256 _voteId) internal {
-        // When a challenged vote is ruled as voided, it is considered as being rejected.
-        // This could be the case for challenges where the linked Agreement's arbitrator refuses to rule the case.
-        _onDisputableActionRejected(_voteId);
     }
 
     // Internal fns
@@ -739,7 +642,7 @@ contract DisputableVoting is IForwarderWithContext, DisputableAragonApp {
     /**
     * @dev Create a new vote
     * @param _executionScript Action (encoded as an EVM script) that will be allowed to execute if the vote passes
-    * @param _context Additional context for the vote, also used as the disputable action's context on the linked Agreement
+    * @param _context Additional context for the vote
     * @return voteId Identification number for the newly created vote
     */
     function _newVote(bytes _executionScript, bytes _context) internal returns (uint256 voteId) {
@@ -756,10 +659,6 @@ contract DisputableVoting is IForwarderWithContext, DisputableAragonApp {
         vote_.status = VoteStatus.Normal;
         vote_.settingId = _getCurrentSettingId();
         vote_.executionScriptHash = keccak256(_executionScript);
-
-        // Notify the linked Agreement about the new vote; this is mandatory in making the vote disputable
-        // Note that we send `msg.sender` as the action's submitter--the linked Agreement may expect to be able to pull funds from this account
-        vote_.actionId = _registerDisputableAction(voteId, _context, msg.sender);
 
         emit StartVote(voteId, msg.sender, _context, _executionScript);
     }
@@ -886,7 +785,7 @@ contract DisputableVoting is IForwarderWithContext, DisputableAragonApp {
     * @return True if the vote can be executed
     */
     function _canExecute(Vote storage _vote) internal view returns (bool) {
-        // If the vote is executed, paused, or cancelled, it cannot be executed
+        // If the vote is executed it cannot be executed
         if (!_isNormal(_vote)) {
             return false;
         }
@@ -914,15 +813,6 @@ contract DisputableVoting is IForwarderWithContext, DisputableAragonApp {
     */
     function _isNormal(Vote storage _vote) internal view returns (bool) {
         return _vote.status == VoteStatus.Normal;
-    }
-
-    /**
-    * @dev Tell if a vote is paused
-    * @param _vote Vote instance being queried
-    * @return True if the vote is paused
-    */
-    function _isPaused(Vote storage _vote) internal view returns (bool) {
-        return _vote.status == VoteStatus.Paused;
     }
 
     /**
@@ -978,15 +868,7 @@ contract DisputableVoting is IForwarderWithContext, DisputableAragonApp {
     */
     function _hasFinishedDelegatedVotingPeriod(Vote storage _vote, Setting storage _setting) internal view returns (bool) {
         uint64 baseDelegatedVotingPeriodEndDate = _vote.startDate.add(_setting.delegatedVotingPeriod);
-
-        // If the vote was paused before the delegated voting period ended, we need to extend it
-        uint64 pausedAt = _vote.pausedAt;
-        uint64 pauseDuration = _vote.pauseDuration;
-        uint64 actualDeletedVotingEndDate = pausedAt != 0 && pausedAt < baseDelegatedVotingPeriodEndDate
-            ? baseDelegatedVotingPeriodEndDate.add(pauseDuration)
-            : baseDelegatedVotingPeriodEndDate;
-
-        return getTimestamp() >= actualDeletedVotingEndDate;
+        return getTimestamp() >= baseDelegatedVotingPeriodEndDate;
     }
 
     /**
@@ -999,15 +881,7 @@ contract DisputableVoting is IForwarderWithContext, DisputableAragonApp {
     function _hasStartedQuietEndingPeriod(Vote storage _vote, Setting storage _setting) internal view returns (bool) {
         uint64 voteBaseEndDate = _baseVoteEndDate(_vote, _setting);
         uint64 baseQuietEndingPeriodStartDate = voteBaseEndDate.sub(_setting.quietEndingPeriod);
-
-        // If the vote was paused before the quiet ending period started, we need to delay it
-        uint64 pausedAt = _vote.pausedAt;
-        uint64 pauseDuration = _vote.pauseDuration;
-        uint64 actualQuietEndingPeriodStartDate = pausedAt != 0 && pausedAt < baseQuietEndingPeriodStartDate
-            ? baseQuietEndingPeriodStartDate.add(pauseDuration)
-            : baseQuietEndingPeriodStartDate;
-
-        return getTimestamp() >= actualQuietEndingPeriodStartDate;
+        return getTimestamp() >= baseQuietEndingPeriodStartDate;
     }
 
     /**
@@ -1023,7 +897,7 @@ contract DisputableVoting is IForwarderWithContext, DisputableAragonApp {
 
     /**
     * @dev Calculate the original end date of a vote
-    *      It does not consider extensions from pauses or the quiet ending mechanism
+    *      It does not consider extensions from the quiet ending mechanism
     * @param _vote Vote instance being queried
     * @param _setting Setting instance applicable to the vote
     * @return Datetime of the vote's original end date
@@ -1034,24 +908,22 @@ contract DisputableVoting is IForwarderWithContext, DisputableAragonApp {
 
     /**
     * @dev Tell the last computed end date of a vote.
-    *      It considers extensions from pauses and the quiet ending mechanism.
+    *      It considers extensions from the quiet ending mechanism.
     *      We call this the "last computed end date" because we use the currently cached quiet ending extension, which may be off-by-one from reality
     *      because it is only updated on the first vote in a new extension (which may never happen).
-    *      The pause duration will only be included after the vote has "resumed" from its pause, as we do not know how long the pause will be in advance.
     * @param _vote Vote instance being queried
     * @param _setting Setting instance applicable to the vote
     * @return Datetime of the vote's last computed end date
     */
     function _lastComputedVoteEndDate(Vote storage _vote, Setting storage _setting) internal view returns (uint64) {
-        uint64 endDateAfterPause = _baseVoteEndDate(_vote, _setting).add(_vote.pauseDuration);
-        return endDateAfterPause.add(_vote.quietEndingExtensionDuration);
+        uint64 endDate = _baseVoteEndDate(_vote, _setting);
+        return endDate.add(_vote.quietEndingExtensionDuration);
     }
 
     /**
     * @dev Calculate the current end date of a vote.
-    *      It considers extensions from pauses and the quiet ending mechanism.
+    *      It considers extensions from the quiet ending mechanism.
     *      We call this the "current end date" because it takes into account a posssibly "missing" quiet ending extension that was not cached with the vote.
-    *      The pause duration will only be included after the vote has "resumed" from its pause, as we do not know how long the pause will be in advance.
     * @param _vote Vote instance being queried
     * @param _setting Setting instance applicable to the vote
     * @return Datetime of the vote's current end date
@@ -1150,10 +1022,9 @@ contract DisputableVoting is IForwarderWithContext, DisputableAragonApp {
     * @return True if the address can create votes
     */
     function _canForward(address _sender, bytes) internal view returns (bool) {
-        IAgreement agreement = _getAgreement();
         // To make sure the sender address is reachable by ACL oracles, we need to pass it as the first argument.
         // Permissions set with ANY_ENTITY do not provide the original sender's address into the ACL Oracle's `grantee` argument.
-        return agreement != IAgreement(0) && canPerform(_sender, CREATE_VOTES_ROLE, arr(_sender));
+        return canPerform(_sender, CREATE_VOTES_ROLE, arr(_sender));
     }
 
     /**
