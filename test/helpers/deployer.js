@@ -24,6 +24,7 @@ const DEFAULT_VOTING_INITIALIZATION_PARAMS = {
   actionCollateral:    0,
   challengeCollateral: 0,
   challengeDuration:   ONE_DAY,
+  representativeManager: ZERO_ADDRESS,
 }
 
 class VotingDeployer {
@@ -68,9 +69,9 @@ class VotingDeployer {
     const token = options.token || this.token
 
     const defaultOptions = { ...DEFAULT_VOTING_INITIALIZATION_PARAMS, ...options }
-    const { requiredSupport, minimumAcceptanceQuorum, voteDuration, delegatedVotingPeriod, executionDelay, quietEndingPeriod, quietEndingExtension } = defaultOptions
+    const { requiredSupport, minimumAcceptanceQuorum, voteDuration, delegatedVotingPeriod, executionDelay, quietEndingPeriod, quietEndingExtension, representativeManager } = defaultOptions
 
-    await this.voting.initialize(token.address, voteDuration, requiredSupport, minimumAcceptanceQuorum, delegatedVotingPeriod, quietEndingPeriod, quietEndingExtension, executionDelay)
+    await this.voting.initialize(token.address, voteDuration, requiredSupport, minimumAcceptanceQuorum, delegatedVotingPeriod, quietEndingPeriod, quietEndingExtension, executionDelay, representativeManager)
 
     return this.voting
   }

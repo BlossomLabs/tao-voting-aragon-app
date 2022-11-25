@@ -6,7 +6,7 @@ const { ONE_DAY, pct16, bigExp, bn } = require('@1hive/contract-helpers-test')
 const { assertBn, assertRevert, assertEvent, assertAmountOfEvents } = require('@1hive/contract-helpers-test/src/asserts')
 
 contract('Voting delegation', ([_, owner, voter, anotherVoter, thirdVoter, representative, anotherRepresentative, anyone]) => {
-  let voting, token, voteId
+  let voting, representativeManager, token, voteId
 
   const MIN_QUORUM = pct16(20)
   const MIN_SUPPORT = pct16(30)
@@ -15,6 +15,11 @@ contract('Voting delegation', ([_, owner, voter, anotherVoter, thirdVoter, repre
   const QUIET_ENDING_EXTENSION = ONE_DAY * 5
   const VOTE_DURATION = ONE_DAY * 5
   const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000'
+
+  const setRepresentativeManager = async () => {
+    representativeManager = await deployer.deployAndInitialize({ owner, minimumAcceptanceQuorum: MIN_QUORUM, requiredSupport: MIN_SUPPORT, voteDuration: VOTE_DURATION, delegatedVotingPeriod: DELEGATED_VOTING_PERIOD, quietEndingPeriod: QUIET_ENDING_PERIOD, quietEndingExtension: QUIET_ENDING_EXTENSION })
+    voting = await deployer.deployAndInitialize({ owner, minimumAcceptanceQuorum: MIN_QUORUM, requiredSupport: MIN_SUPPORT, voteDuration: VOTE_DURATION, delegatedVotingPeriod: DELEGATED_VOTING_PERIOD, quietEndingPeriod: QUIET_ENDING_PERIOD, quietEndingExtension: QUIET_ENDING_EXTENSION, representativeManager: representativeManager.address })
+  }
 
   before('mint tokens', async () => {
     token = await deployer.deployToken({})
@@ -25,6 +30,7 @@ contract('Voting delegation', ([_, owner, voter, anotherVoter, thirdVoter, repre
 
   beforeEach('deploy voting', async () => {
     voting = await deployer.deployAndInitialize({ owner, minimumAcceptanceQuorum: MIN_QUORUM, requiredSupport: MIN_SUPPORT, voteDuration: VOTE_DURATION, delegatedVotingPeriod: DELEGATED_VOTING_PERIOD, quietEndingPeriod: QUIET_ENDING_PERIOD, quietEndingExtension: QUIET_ENDING_EXTENSION })
+    representativeManager = voting;
   })
 
   const getCastVote = async (voter, id = voteId) => voting.getCastVote(id, voter)
@@ -59,9 +65,28 @@ contract('Voting delegation', ([_, owner, voter, anotherVoter, thirdVoter, repre
         assert.isFalse(await voting.isRepresentativeOf(voter, representative))
       })
     })
+
+    context('when representative manager is set', () => {
+      beforeEach(setRepresentativeManager);
+      context('when the representative was not set yet', () => {
+        it('reverts when setting the given representative', async () => {
+          await assertRevert(voting.setRepresentative(representative, { from: voter }), 'ERROR_REPRESENTATIVE_MANAGER_ALREADY_PRESENT')
+        })
+      })
+  
+      context('when the representative was already set', () => {
+        beforeEach('add representative', async () => {
+          await representativeManager.setRepresentative(representative, { from: voter })
+        })
+  
+        it('reverts when trying to update the given representative', async () => {
+          await assertRevert(voting.setRepresentative(representative, { from: voter }), 'ERROR_REPRESENTATIVE_MANAGER_ALREADY_PRESENT')
+        })
+      })
+    })
   })
 
-  describe('canVoteOnBehalfOf', () => {
+  const canVoteOnBehalfOf = () => {
     context('when the vote exists', () => {
       beforeEach('create a vote', async () => {
         ({ voteId } = await createVote({ voting, from: voter }))
@@ -81,7 +106,7 @@ contract('Voting delegation', ([_, owner, voter, anotherVoter, thirdVoter, repre
 
       context('when the sender is a representative', () => {
         beforeEach('add representative', async () => {
-          await voting.setRepresentative(representative, { from: voter })
+          await representativeManager.setRepresentative(representative, { from: voter })
         })
 
         context('when the voter can vote', () => {
@@ -112,7 +137,7 @@ contract('Voting delegation', ([_, owner, voter, anotherVoter, thirdVoter, repre
 
                 context('when the representative was disallowed', () => {
                   beforeEach('change representative', async () => {
-                    await voting.setRepresentative(anotherRepresentative, { from: voter })
+                    await representativeManager.setRepresentative(anotherRepresentative, { from: voter })
                   })
 
                   itReturnsFalse(voter, representative)
@@ -160,7 +185,7 @@ contract('Voting delegation', ([_, owner, voter, anotherVoter, thirdVoter, repre
 
                 context('when the representative was disallowed', () => {
                   beforeEach('change representative', async () => {
-                    await voting.setRepresentative(anotherRepresentative, { from: voter })
+                    await representativeManager.setRepresentative(anotherRepresentative, { from: voter })
                   })
 
                   itReturnsFalse(voter, representative)
@@ -208,7 +233,7 @@ contract('Voting delegation', ([_, owner, voter, anotherVoter, thirdVoter, repre
 
                 context('when the representative was disallowed', () => {
                   beforeEach('change representative', async () => {
-                    await voting.setRepresentative(anotherRepresentative, { from: voter })
+                    await representativeManager.setRepresentative(anotherRepresentative, { from: voter })
                   })
 
                   itReturnsFalse(voter, representative)
@@ -246,7 +271,7 @@ contract('Voting delegation', ([_, owner, voter, anotherVoter, thirdVoter, repre
           const invalidVoter = anyone
 
           beforeEach('add representative', async () => {
-            await voting.setRepresentative(representative, { from: invalidVoter })
+            await representativeManager.setRepresentative(representative, { from: invalidVoter })
           })
 
           itReturnsFalse(invalidVoter, representative)
@@ -264,16 +289,16 @@ contract('Voting delegation', ([_, owner, voter, anotherVoter, thirdVoter, repre
 
     context('when the vote does not exist', () => {
       beforeEach('add representative', async () => {
-        await voting.setRepresentative(representative, { from: voter })
+        await representativeManager.setRepresentative(representative, { from: voter })
       })
 
       it('reverts', async () => {
         await assertRevert(voting.canVoteOnBehalfOf(voteId, [voter], representative, { from: representative }), VOTING_ERRORS.VOTING_NO_VOTE)
       })
     })
-  })
+  }
 
-  describe('voteOnBehalfOf', () => {
+  const voteOnBehalfOf = () => {
     context('when the vote exists', () => {
       beforeEach('create a vote', async () => {
         ({ voteId } = await createVote({ voting, from: voter }))
@@ -283,7 +308,7 @@ contract('Voting delegation', ([_, owner, voter, anotherVoter, thirdVoter, repre
         const from = representative
 
         beforeEach('add representative', async () => {
-          await voting.setRepresentative(representative, { from: voter })
+          await representativeManager.setRepresentative(representative, { from: voter })
         })
 
         context('when the voter can vote', () => {
@@ -346,7 +371,7 @@ contract('Voting delegation', ([_, owner, voter, anotherVoter, thirdVoter, repre
               it('can not be changed by another representative', async () => {
                 await voting.voteOnBehalfOf(voteId, false, [voter], { from: representative })
 
-                await voting.setRepresentative(anotherRepresentative, { from: voter })
+                await representativeManager.setRepresentative(anotherRepresentative, { from: voter })
                 const receipt = await voting.voteOnBehalfOf(voteId, true, [voter], { from: anotherRepresentative })
 
                 const { yeas, nays } = await getVoteState(voting, voteId)
@@ -563,7 +588,7 @@ contract('Voting delegation', ([_, owner, voter, anotherVoter, thirdVoter, repre
               it('can not be changed by another representative', async () => {
                 await voting.voteOnBehalfOf(voteId, false, [voter], { from: representative })
 
-                await voting.setRepresentative(anotherRepresentative, { from: voter })
+                await representativeManager.setRepresentative(anotherRepresentative, { from: voter })
                 const receipt = await voting.voteOnBehalfOf(voteId, true, [voter], { from: anotherRepresentative })
 
                 const { yeas, nays } = await getVoteState(voting, voteId)
@@ -780,7 +805,7 @@ contract('Voting delegation', ([_, owner, voter, anotherVoter, thirdVoter, repre
               it('can not be changed by another representative', async () => {
                 await voting.voteOnBehalfOf(voteId, false, [voter], { from: representative })
 
-                await voting.setRepresentative(anotherRepresentative, { from: voter })
+                await representativeManager.setRepresentative(anotherRepresentative, { from: voter })
                 const receipt = await voting.voteOnBehalfOf(voteId, true, [voter], { from: anotherRepresentative })
 
                 const { yeas, nays } = await getVoteState(voting, voteId)
@@ -961,7 +986,7 @@ contract('Voting delegation', ([_, owner, voter, anotherVoter, thirdVoter, repre
           const invalidVoter = anyone
 
           beforeEach('add representative', async () => {
-            await voting.setRepresentative(representative, { from: invalidVoter })
+            await representativeManager.setRepresentative(representative, { from: invalidVoter })
           })
 
           it('reverts', async () => {
@@ -989,17 +1014,17 @@ contract('Voting delegation', ([_, owner, voter, anotherVoter, thirdVoter, repre
 
     context('when the vote does not exist', () => {
       it('reverts', async () => {
-        await voting.setRepresentative(representative, { from: voter })
+        await representativeManager.setRepresentative(representative, { from: voter })
         await assertRevert(voting.voteOnBehalfOf(voteId, true, [voter], { from: representative }), VOTING_ERRORS.VOTING_NO_VOTE)
       })
     })
-  })
+  }
 
-  describe('voteOnBehalfOfMany', () => {
+  const voteOnBehalfOfMany = () => {
     beforeEach('add representative', async () => {
-      await voting.setRepresentative(representative, { from: voter })
-      await voting.setRepresentative(representative, { from: anotherVoter })
-      await voting.setRepresentative(representative, { from: thirdVoter })
+      await representativeManager.setRepresentative(representative, { from: voter })
+      await representativeManager.setRepresentative(representative, { from: anotherVoter })
+      await representativeManager.setRepresentative(representative, { from: thirdVoter })
     })
 
     context('when the vote id exists', () => {
@@ -1061,7 +1086,19 @@ contract('Voting delegation', ([_, owner, voter, anotherVoter, thirdVoter, repre
         await assertRevert(voting.voteOnBehalfOf(voteId, true, voters, { from: representative }), VOTING_ERRORS.VOTING_NO_VOTE)
       })
     })
+  }
+
+  describe('canVoteOnBehalfOf', canVoteOnBehalfOf);
+  describe('voteOnBehalfOf', voteOnBehalfOf);
+  describe('voteOnBehalfOfMany', voteOnBehalfOfMany);
+
+  context('when the representative manager is set', () => {
+    beforeEach(setRepresentativeManager);
+    describe('canVoteOnBehalfOf', canVoteOnBehalfOf);
+    describe('voteOnBehalfOf', voteOnBehalfOf);
+    describe('voteOnBehalfOfMany', voteOnBehalfOfMany);
   })
+
 
   describe('canRepresentativesVote', () => {
     beforeEach('create a vote', async () => {

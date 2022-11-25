@@ -50,6 +50,7 @@ contract TaoVoting is AragonApp, IForwarder {
     string private constant ERROR_INVALID_DELEGATED_VOTING_PERIOD = "VOTING_INVALID_DLGT_VOTE_PERIOD";
     string private constant ERROR_INVALID_QUIET_ENDING_PERIOD = "VOTING_INVALID_QUIET_END_PERIOD";
     string private constant ERROR_INVALID_EXECUTION_SCRIPT = "VOTING_INVALID_EXECUTION_SCRIPT";
+    string private constant ERROR_REPRESENTATIVE_MANAGER_ALREADY_PRESENT = "ERROR_REPRESENTATIVE_MANAGER_ALREADY_PRESENT";
 
     // Workflow errors
     string private constant ERROR_CANNOT_FORWARD = "VOTING_CANNOT_FORWARD";
@@ -128,6 +129,8 @@ contract TaoVoting is AragonApp, IForwarder {
     mapping (uint256 => Vote) internal votes;               // List of votes indexed by ID (starting at 0)
     mapping (address => address) internal representatives;  // Mapping of voter => allowed representative
 
+    TaoVoting public representativeManager;
+
     event NewSetting(uint256 settingId);
     event ChangeVoteTime(uint64 voteTime);
     event ChangeSupportRequired(uint64 supportRequiredPct);
@@ -163,7 +166,8 @@ contract TaoVoting is AragonApp, IForwarder {
         uint64 _delegatedVotingPeriod,
         uint64 _quietEndingPeriod,
         uint64 _quietEndingExtension,
-        uint64 _executionDelay
+        uint64 _executionDelay,
+        TaoVoting _representativeManager
     )
         external
     {
@@ -171,6 +175,9 @@ contract TaoVoting is AragonApp, IForwarder {
 
         require(isContract(_token), ERROR_TOKEN_NOT_CONTRACT);
         token = _token;
+
+        require(_representativeManager == address(0) || isContract(_representativeManager));
+        representativeManager = _representativeManager;
 
         (Setting storage setting, ) = _newSetting();
         _changeVoteTime(setting, _voteTime);
@@ -318,6 +325,7 @@ contract TaoVoting is AragonApp, IForwarder {
     * @param _representative Address of the representative who is allowed to vote on behalf of the sender. Use the zero address for none.
     */
     function setRepresentative(address _representative) external isInitialized {
+        require(representativeManager == address(0), ERROR_REPRESENTATIVE_MANAGER_ALREADY_PRESENT);
         representatives[msg.sender] = _representative;
         emit ChangeRepresentative(msg.sender, _representative);
     }
@@ -1013,6 +1021,9 @@ contract TaoVoting is AragonApp, IForwarder {
     * @return True if the representative currently represents the voter
     */
     function _isRepresentativeOf(address _voter, address _representative) internal view returns (bool) {
+        if (representativeManager != address(0)) {
+            return representativeManager.isRepresentativeOf(_voter, _representative);
+        }
         return representatives[_voter] == _representative;
     }
 
