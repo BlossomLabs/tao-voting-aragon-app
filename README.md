@@ -17,7 +17,7 @@ You can use the following script in a [EVMcrispr terminal](https://evmcrispr.blo
 
 ```
 connect <dao> (
-  install blossom-tao-voting.open:new <token> <voteTime> <supportRequiredPct> <minAcceptQuorumPct> <delegatedVotingPeriod> <quietEndingPeriod> <quietEndingExtension> <executionDelay>
+  install blossom-tao-voting.open:new <token> <voteTime> <supportRequiredPct> <minAcceptQuorumPct> <delegatedVotingPeriod> <quietEndingPeriod> <quietEndingExtension> <executionDelay> <representativeManager>
   grant ANY_ENTITY blossom-tao-voting.open:new CREATE_VOTES_ROLE blossom-tao-voting.open:new
 )
 ```
@@ -43,3 +43,4 @@ allowed to vote on behalf of principals. Example: `2d`.
 * **quietEndingExtension**: Duration to extend a vote in case of non-quiet ending. Example:
 `12h`.
 * **executionDelay**: Duration to wait before a passed vote can be executed: Example: `12h`.
+* **representativeManager**: Address of the Tao Voting who is going to keep track of representatives. Example: `ZERO_ADDRESS` if you want this instance to keep track of its own representatives.
