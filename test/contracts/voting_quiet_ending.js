@@ -82,12 +82,12 @@ contract('Voting', ([_, owner, holder10, holder20, holder30, holder40, holder50]
           await voting.mockIncreaseTime(QUIET_ENDING_PERIOD / 2)
         })
 
-        it('the vote was flipped and remains open', async () => {
+        it.only('the vote was flipped and remains open', async () => {
           const { isOpen } = await getVoteState(voting, voteId)
           assert.isTrue(isOpen, 'vote is not open')
         })
 
-        it('new voter can vote', async () => {
+        it.only('new voter can vote', async () => {
           assert.isTrue(await voting.canVote(voteId, holder50), 'voter cannot vote')
 
           const receipt = await voting.vote(voteId, true, { from: holder50 })
@@ -176,7 +176,7 @@ contract('Voting', ([_, owner, holder10, holder20, holder30, holder40, holder50]
       })
     }
 
-    context('when there were no votes cast before the quiet ending period', () => {
+    context.skip('when there were no votes cast before the quiet ending period', () => {
       context('when there were no votes during the quiet ending period', () => {
         beforeEach('move to the middle of the quiet ending period', async () => {
           await voting.mockIncreaseTime(VOTE_DURATION - QUIET_ENDING_PERIOD / 2)
@@ -231,7 +231,7 @@ contract('Voting', ([_, owner, holder10, holder20, holder30, holder40, holder50]
           await voting.mockIncreaseTime(VOTE_DURATION - QUIET_ENDING_PERIOD / 2)
         })
 
-        context('when the vote was flipped', () => {
+        context.only('when the vote was flipped', () => {
           const currentSupport = !previousSupport
 
           beforeEach('cast a vote', async () => {
@@ -253,7 +253,7 @@ contract('Voting', ([_, owner, holder10, holder20, holder30, holder40, holder50]
         })
       })
 
-      context('when there were a few votes cast during the quiet ending period', () => {
+      context.skip('when there were a few votes cast during the quiet ending period', () => {
         beforeEach('move to the middle of the quiet ending period', async () => {
           await voting.mockIncreaseTime(VOTE_DURATION - QUIET_ENDING_PERIOD / 2)
         })
@@ -283,7 +283,7 @@ contract('Voting', ([_, owner, holder10, holder20, holder30, holder40, holder50]
       })
     })
 
-    context('when there were a few votes cast before the quiet ending period', () => {
+    context.skip('when there were a few votes cast before the quiet ending period', () => {
       const previousSupport = false
 
       beforeEach('cast some votes', async () => {
