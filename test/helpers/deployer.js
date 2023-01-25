@@ -97,7 +97,7 @@ class VotingDeployer {
   }
 
   async deployBase() {
-    const Voting = this._getContract('TaoVotingMock')
+    const Voting = this._getContract('TaoVoting')
     const base = await Voting.new()
     this.previousDeploy = { ...this.previousDeploy, base }
     return base

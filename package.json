@@ -14,7 +14,7 @@
     "console": "buidler console",
     "compile": "hardhat compile --force",
     "devchain": "buidler node",
-    "build": "cd app && yarn install && yarn build",
+    "build": "",
     "lint": "solium --dir ./contracts",
     "test": "hardhat test",
     "test:gas": "REPORT_GAS=true buidler test --network localhost",
@@ -23,7 +23,8 @@
   },
   "dependencies": {
     "@aragon/minime": "1.0.0",
-    "@aragon/os": "4.4.0"
+    "@aragon/os": "4.4.0",
+    "@nomicfoundation/hardhat-network-helpers": "^1.0.7"
   },
   "devDependencies": {
     "@1hive/contract-helpers-test": "^0.1.0",
