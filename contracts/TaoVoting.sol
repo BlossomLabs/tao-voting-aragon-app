@@ -9,6 +9,7 @@ import "@aragon/os/contracts/common/IForwarder.sol";
 import "@aragon/os/contracts/lib/math/SafeMath.sol";
 import "@aragon/os/contracts/lib/math/SafeMath64.sol";
 import "@aragon/minime/contracts/MiniMeToken.sol";
+import "hardhat/console.sol";
 
 
 contract TaoVoting is AragonApp, IForwarder {
@@ -727,11 +728,13 @@ contract TaoVoting is AragonApp, IForwarder {
             // If we do not have a snapshot of the support yet, simply store the given value.
             // Note that if there are no votes during the quiet ending period, it is obviously impossible for the vote to be flipped and
             // this snapshot is never stored.
+            console.log(">> Goes through here when a vote is cast during the quiet ending period");
             _vote.quietEndingSnapshotSupport = _voterStateFor(isAccepted);
         } else {
             // We are calculating quiet ending extensions via "rolling snapshots", and so we only update the vote's cached duration once
             // the last period is over and we've confirmed the flip.
             if (getTimestamp() >= _lastComputedVoteEndDate(_vote, _setting)) {
+                console.log(">> Extends the vote when the vote is flipped during the quiet ending period and the previous period is over");
                 _vote.quietEndingExtensionDuration = _vote.quietEndingExtensionDuration.add(_setting.quietEndingExtension);
                 emit QuietEndingExtendVote(_voteId, isAccepted);
             }
