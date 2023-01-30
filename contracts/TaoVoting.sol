@@ -826,15 +826,6 @@ contract TaoVoting is AragonApp, IForwarder {
     }
 
     /**
-    * @dev Tell if a vote was executed
-    * @param _vote Vote instance being queried
-    * @return True if the vote was executed
-    */
-    function _isExecuted(Vote storage _vote) internal view returns (bool) {
-        return _vote.status == VoteStatus.Executed;
-    }
-
-    /**
     * @dev Tell if a vote is currently accepted
     * @param _vote Vote instance being queried
     * @param _setting Setting instance applicable to the vote
