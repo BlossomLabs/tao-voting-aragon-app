@@ -290,7 +290,7 @@ contract TaoVoting is AragonApp, IForwarder {
         // extension, and so we don't need to check other timing-based pre-conditions
         require(_canRepresentativesVote(vote_), ERROR_PAST_REPRESENTATIVE_VOTING_WINDOW);
 
-        for (uint256 i = 0; i < _voters.length; ++i) {
+        for (uint256 i; i < _voters.length; ++i) {
             address voter = _voters[i];
             require(_hasVotingPower(vote_, voter), ERROR_CANNOT_VOTE);
             require(_isRepresentativeOf(voter, msg.sender), ERROR_NOT_REPRESENTATIVE);
@@ -489,7 +489,7 @@ contract TaoVoting is AragonApp, IForwarder {
             return false;
         }
 
-        for (uint256 i = 0; i < _voters.length; ++i) {
+        for (uint256 i; i < _voters.length; ++i) {
             address voter = _voters[i];
             if (!_hasVotingPower(vote_, voter) || !_isRepresentativeOf(voter, _representative) || _hasCastVote(vote_, voter)) {
                 return false;
