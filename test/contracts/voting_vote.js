@@ -339,5 +339,10 @@ contract('Voting', ([_, owner, holder20, holder29, holder51, nonHolder, represen
       const result3 = await voting.isValuePct(pct16(50).add(bn(1)), pct16(100), pct16(50))
       assert.equal(result3, true, 'off-by-one up should pass')
     })
+
+    it('tests precision loss', async () => {
+      const result1 = await voting.isValuePct(bigExp(1000, 18), bigExp(19995, 17), bigExp(1000, 18).mul(pct16(100)).div(bigExp(19995, 17)))
+      assert.equal(result1, true, 'precision loss should not affect result')
+    })
   })
 })

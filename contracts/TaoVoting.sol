@@ -1052,8 +1052,8 @@ contract TaoVoting is AragonApp, IForwarder {
             return false;
         }
 
-        uint256 computedPct = _value.mul(PCT_BASE) / _total;
-        return computedPct > _pct;
+        // _value / _total > _pct / PCT_BASE
+        return _value.mul(PCT_BASE) > _pct.mul(_total);
     }
 
     /**
