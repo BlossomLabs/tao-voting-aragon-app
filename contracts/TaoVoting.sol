@@ -49,6 +49,7 @@ contract TaoVoting is AragonApp, IForwarder {
     string private constant ERROR_CHANGE_SUPPORT_TOO_BIG = "VOTING_CHANGE_SUPPORT_TOO_BIG";
     string private constant ERROR_INVALID_DELEGATED_VOTING_PERIOD = "VOTING_INVALID_DLGT_VOTE_PERIOD";
     string private constant ERROR_INVALID_QUIET_ENDING_PERIOD = "VOTING_INVALID_QUIET_END_PERIOD";
+    string private constant ERROR_INVALID_QUIET_ENDING_EXTENSION = "VOTING_INVALID_QUIET_END_EXT";
     string private constant ERROR_INVALID_EXECUTION_SCRIPT = "VOTING_INVALID_EXECUTION_SCRIPT";
     string private constant ERROR_REPRESENTATIVE_MANAGER_ALREADY_PRESENT = "ERROR_REPRESENTATIVE_MANAGER_ALREADY_PRESENT";
 
@@ -631,6 +632,7 @@ contract TaoVoting is AragonApp, IForwarder {
     */
     function _changeQuietEndingConfiguration(Setting storage _setting, uint64 _quietEndingPeriod, uint64 _quietEndingExtension) internal {
         require(_quietEndingPeriod <= _setting.voteTime, ERROR_INVALID_QUIET_ENDING_PERIOD);
+        require(0 <_quietEndingExtension, ERROR_INVALID_QUIET_ENDING_EXTENSION);
 
         _setting.quietEndingPeriod = _quietEndingPeriod;
         _setting.quietEndingExtension = _quietEndingExtension;

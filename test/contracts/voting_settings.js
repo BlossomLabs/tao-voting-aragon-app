@@ -349,6 +349,13 @@ contract('Voting settings', ([_, owner, anyone, holder51, holder20, holder29]) =
 
         itReverts(newQuietEndingPeriod, newQuietEndingExtension, VOTING_ERRORS.VOTING_INVALID_QUIET_END_PERIOD)
       })
+
+      context('when the new extension is zero', () => {
+        const newQuietEndingPeriod = VOTE_DURATION
+        const newQuietEndingExtension = 0
+
+        itReverts(newQuietEndingPeriod, newQuietEndingExtension, VOTING_ERRORS.VOTING_INVALID_QUIET_END_EXT)
+      })
     })
 
     context('when the sender is not allowed', () => {

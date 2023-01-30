@@ -50,6 +50,12 @@ contract('Voting initialization', ([_, owner]) => {
 
         await assertRevert(voting.initialize(token.address, VOTE_DURATION, REQUIRED_SUPPORT, MINIMUM_ACCEPTANCE_QUORUM, DELEGATED_VOTING_PERIOD, quietEndingPeriod, QUIET_ENDING_EXTENSION, EXECUTION_DELAY, ZERO_ADDRESS), VOTING_ERRORS.VOTING_INVALID_QUIET_END_PERIOD)
       })
+
+      it('fails if the quiet ending extension is 0', async () => {
+        const quietEndingExtension = 0
+
+        await assertRevert(voting.initialize(token.address, VOTE_DURATION, REQUIRED_SUPPORT, MINIMUM_ACCEPTANCE_QUORUM, DELEGATED_VOTING_PERIOD, QUIET_ENDING_PERIOD, quietEndingExtension, EXECUTION_DELAY, ZERO_ADDRESS), VOTING_ERRORS.VOTING_INVALID_QUIET_END_EXT)
+      })
     })
 
     context('when the app is already initialized', () => {
