@@ -40,17 +40,17 @@
       "registry": "0x843ddfab8406e752d03fa75dbb275070f368658d",
       "appName": "blossom-tao-voting.aragonpm.eth",
       "network": "bscTest"
+    },
+    "gnosis": {
+      "registry": "0xaafca6b0c89521752e559650206d7c925fd0e530",
+      "appName": "blossom-tao-voting.open.aragonpm.eth",
+      "network": "gnosis"
     }
   },
   "roles": [
     {
       "name": "Create new votes",
       "id": "CREATE_VOTES_ROLE",
-      "params": []
-    },
-    {
-      "name": "Challenge votes",
-      "id": "CHALLENGE_ROLE",
       "params": []
     },
     {
