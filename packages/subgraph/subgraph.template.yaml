@@ -22,7 +22,7 @@ templates:
       abi: TaoVoting
     mapping:
       kind: ethereum/events
-      apiVersion: 0.0.3
+      apiVersion: 0.0.5
       language: wasm/assemblyscript
       entities:
         - TaoVoting

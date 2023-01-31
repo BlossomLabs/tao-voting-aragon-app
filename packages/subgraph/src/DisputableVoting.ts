@@ -189,7 +189,7 @@ export function loadOrCreateVoting(
       voting.token = buildERC20(token.value)
     }
   }
-  return voting!
+  return voting
 }
 
 function loadOrCreateCastVote(
@@ -203,7 +203,7 @@ function loadOrCreateCastVote(
     castVote = new CastVoteEntity(castVoteId)
     castVote.vote = buildVoteId(votingAddress, voteId)
   }
-  return castVote!
+  return castVote
 }
 
 function loadOrCreateVoter(
@@ -221,7 +221,7 @@ function loadOrCreateVoter(
     voter.address = voterAddress
     voter.save()
   }
-  return voter!
+  return voter
 }
 
 export function loadOrCreateUser(address: Address): UserEntity {
@@ -234,7 +234,7 @@ export function loadOrCreateUser(address: Address): UserEntity {
     user.save()
   }
 
-  return user!
+  return user
 }
 
 export function updateVoteState(votingAddress: Address, voteId: BigInt): void {
@@ -261,7 +261,7 @@ export function updateVoteState(votingAddress: Address, voteId: BigInt): void {
   vote.save()
 }
 
-export function buildERC20(address: Address): string {
+export function buildERC20(address: Address): string | null {
   const id = address.toHexString()
   let token = ERC20Entity.load(id)
 
