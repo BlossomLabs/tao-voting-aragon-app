@@ -1,11 +1,11 @@
 {
-  "network": "rinkeby",
+  "network": "gnosis",
   "dataSources": {
     "Organizations": [
       {
-        "name": "DisputableVoting",
-        "address": "0xfa5bae0029f0c2acffcc71ada4249bd0eaafd1f4",
-        "startBlock": "7200827"
+        "name": "AN Testing Dao",
+        "address": "0x04cdD9e8073D9D0A238f622Fdc11c6dAf9398Ba8",
+        "startBlock": "25880570"
       }
     ],
     "OrganizationFactories": [],
