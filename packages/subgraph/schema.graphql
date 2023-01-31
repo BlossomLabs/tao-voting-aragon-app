@@ -1,0 +1,96 @@
+enum VoteStatus {
+  Scheduled
+  Executed
+}
+
+enum VoterState {
+  Absent
+  Yea
+  Nay
+}
+
+type TaoVoting @entity {
+  id: ID!
+  dao: Bytes!
+  token: ERC20
+  setting: Setting
+  votes: [Vote!] @derivedFrom(field: "voting")
+  voters: [Voter!] @derivedFrom(field: "voting")
+  representativeManager: Bytes
+}
+
+type Vote @entity {
+  id: ID!
+  voting: TaoVoting!
+  voteId: BigInt!
+  creator: Bytes!
+  originalCreator: Bytes!
+  context: String!
+  status: VoteStatus!
+  setting: Setting!
+  startDate: BigInt!
+  totalPower: BigInt!
+  snapshotBlock: BigInt!
+  yeas: BigInt!
+  nays: BigInt!
+  quietEndingExtensionDuration: BigInt!
+  quietEndingSnapshotSupport: VoterState!
+  script: Bytes!
+  executedAt: BigInt!
+  isAccepted: Boolean!
+  castVotes: [CastVote!] @derivedFrom(field: "vote")
+}
+
+type CastVote @entity {
+  id: ID!
+  vote: Vote!
+  voter: Voter!
+  caster: Bytes!
+  supports: Boolean!
+  stake: BigInt!
+  createdAt: BigInt!
+}
+
+type Voter @entity {
+  id: ID!
+  user: User!
+  voting: TaoVoting!
+  address: Bytes!
+  representative: Voter
+  castVotes: [CastVote!] @derivedFrom(field: "voter")
+  representativeFor: [Voter!]! @derivedFrom(field: "representative")
+}
+
+type User @entity {
+  id: ID!
+  address: Bytes!
+  supports: [Voter!]! @derivedFrom(field: "user")
+}
+
+type Setting @entity {
+  id: ID!
+  voting: TaoVoting!
+  settingId: BigInt!
+  voteTime: BigInt!
+  supportRequiredPct: BigInt!
+  minimumAcceptanceQuorumPct: BigInt!
+  delegatedVotingPeriod: BigInt!
+  quietEndingPeriod: BigInt!
+  quietEndingExtension: BigInt!
+  executionDelay: BigInt!
+  createdAt: BigInt!
+}
+
+type ERC20 @entity {
+  id: ID!
+  name: String!
+  symbol: String!
+  decimals: Int!
+}
+
+type AragonInfo @entity {
+  id: ID!
+  orgs: [Bytes!]!
+  apps: [Bytes!]!
+  tokens: [Bytes!]!
+}
