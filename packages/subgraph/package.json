@@ -1,5 +1,6 @@
 {
   "name": "@blossom-labs/subgraph-tao-voting",
+  "private": true,
   "version": "0.1.0",
   "scripts": {
     "codegen": "rm -rf generated; graph codegen",

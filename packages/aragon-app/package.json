@@ -1,5 +1,6 @@
 {
   "name": "blossom-tao-voting",
+  "private": true,
   "version": "1.0.0-rc.0",
   "author": "Aragon Association <legal@aragon.org>",
   "license": "(GPL-3.0-or-later OR AGPL-3.0-or-later)",
