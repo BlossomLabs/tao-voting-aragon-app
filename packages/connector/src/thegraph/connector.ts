@@ -2,7 +2,7 @@ import { providers as ethersProviders } from "ethers"
 import { GraphQLWrapper, QueryResult } from "@1hive/connect-thegraph"
 import { SubscriptionCallback, SubscriptionHandler } from "@1hive/connect-types"
 
-import { TaoVotingData, IDisputableVotingConnector } from "../types"
+import { TaoVotingData, DisputableVotingConnector } from "../types"
 import Vote from "../models/Vote"
 import Voter from "../models/Voter"
 import ERC20 from "../models/ERC20"
@@ -39,7 +39,7 @@ type DisputableVotingConnectorTheGraphConfig = {
 }
 
 export default class DisputableVotingConnectorTheGraph
-  implements IDisputableVotingConnector
+  implements DisputableVotingConnector
 {
   #gql: GraphQLWrapper
   #ethersProvider: ethersProviders.Provider
@@ -244,21 +244,22 @@ export default class DisputableVotingConnectorTheGraph
     )
   }
 
-  async voter(voterId: string): Promise<Voter> {
+  async voter(votingId: string, voterAddress: string): Promise<Voter> {
     return this.#gql.performQueryWithParser<Voter>(
       queries.GET_VOTER("query"),
-      { voterId },
+      { votingId, voterAddress },
       (result: QueryResult) => parseVoter(result)
     )
   }
 
   onVoter(
-    voterId: string,
+    votingId: string,
+    voterAddress: string,
     callback: SubscriptionCallback<Voter>
   ): SubscriptionHandler {
     return this.#gql.subscribeToQueryWithParser<Voter>(
       queries.GET_VOTER("subscription"),
-      { voterId },
+      { votingId, voterAddress },
       callback,
       (result: QueryResult) => parseVoter(result)
     )

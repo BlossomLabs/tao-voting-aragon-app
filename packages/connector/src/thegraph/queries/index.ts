@@ -1,4 +1,4 @@
-import gql from 'graphql-tag'
+import gql from "graphql-tag";
 
 export const GET_DISPUTABLE_VOTING = (type: string) => gql`
   ${type} DisputableVoting($disputableVoting: String!) {
@@ -29,7 +29,7 @@ export const GET_DISPUTABLE_VOTING = (type: string) => gql`
       }
     }
   }
-`
+`;
 
 export const GET_CURRENT_SETTING = (type: string) => gql`
   ${type} DisputableVoting($disputableVoting: String!) {
@@ -51,7 +51,7 @@ export const GET_CURRENT_SETTING = (type: string) => gql`
       }
     }
   }
-`
+`;
 
 export const GET_SETTING = (type: string) => gql`
   ${type} Setting($settingId: String!) {
@@ -71,7 +71,7 @@ export const GET_SETTING = (type: string) => gql`
       }
     }
   }
-`
+`;
 
 export const ALL_SETTINGS = (type: string) => gql`
   ${type} Settings($disputableVoting: String!, $first: Int!, $skip: Int!) {
@@ -93,7 +93,7 @@ export const ALL_SETTINGS = (type: string) => gql`
       }
     }
   }
-`
+`;
 
 export const GET_VOTE = (type: string) => gql`
   ${type} Vote($voteId: String!) {
@@ -145,7 +145,7 @@ export const GET_VOTE = (type: string) => gql`
       }
     }
   }
-`
+`;
 
 export const ALL_VOTES = (type: string) => gql`
   ${type} Votes($disputableVoting: String!, $first: Int!, $skip: Int!) {
@@ -198,7 +198,7 @@ export const ALL_VOTES = (type: string) => gql`
       }
     }
   }
-`
+`;
 
 export const GET_CAST_VOTE = (type: string) => gql`
   ${type} CastVote($castVoteId: String!) {
@@ -216,7 +216,7 @@ export const GET_CAST_VOTE = (type: string) => gql`
       createdAt
     }
   }
-`
+`;
 
 export const ALL_CAST_VOTES = (type: string) => gql`
   ${type} CastVotes($voteId: ID!, $first: Int!, $skip: Int!) {
@@ -236,11 +236,13 @@ export const ALL_CAST_VOTES = (type: string) => gql`
       createdAt
     }
   }
-`
+`;
 
 export const GET_VOTER = (type: string) => gql`
-  ${type} Voter($voterId: String!) {
-    voter(id: $voterId) {
+  ${type} Voter($votingId: String!, $voterAddress: String!) {
+    taoVoting(id: $votingId) {
+    id
+    voters(where: { address: $voterAddress }) {
       id
       address
       representative {
@@ -249,12 +251,29 @@ export const GET_VOTER = (type: string) => gql`
       representativeFor {
         address
       }
-      voting { 
+      voting {
         id
       }
     }
+    
+    representativeManager {
+      voters(where:{ address: $voterAddress}) {
+        id
+        address
+        representative {
+          address
+        }
+        representativeFor {
+          address
+        }
+        voting {
+          id
+        }
+      }
+    }
   }
-`
+  }
+`;
 
 export const GET_ERC20 = (type: string) => gql`
   ${type} ERC20($tokenAddress: String!) {
@@ -265,4 +284,4 @@ export const GET_ERC20 = (type: string) => gql`
       decimals
     }
   }
-`
+`;

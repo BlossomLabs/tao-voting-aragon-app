@@ -85,7 +85,7 @@ export interface ERC20Data {
   decimals: string
 }
 
-export interface IDisputableVotingConnector {
+export interface DisputableVotingConnector {
   disconnect(): Promise<void>
   disputableVoting(disputableVoting: string): Promise<TaoVotingData>
   onDisputableVoting(
@@ -137,9 +137,10 @@ export interface IDisputableVotingConnector {
     skip: number,
     callback: SubscriptionCallback<CastVote[]>
   ): SubscriptionHandler
-  voter(voterId: string): Promise<Voter>
+  voter(votingId: string, voterAddress: string): Promise<Voter>
   onVoter(
-    voterId: string,
+    votingId: string,
+    voterAddress: string,
     callback: SubscriptionCallback<Voter>
   ): SubscriptionHandler
   ERC20(tokenAddress: string): Promise<ERC20>

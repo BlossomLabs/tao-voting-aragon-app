@@ -9,7 +9,7 @@ import {
 import ERC20 from "./ERC20"
 import Setting from "./Setting"
 import CastVote from "./CastVote"
-import { CastVoteData, IDisputableVotingConnector, VoteData } from "../types"
+import { CastVoteData, DisputableVotingConnector, VoteData } from "../types"
 import {
   bn,
   formatBn,
@@ -19,7 +19,7 @@ import {
 } from "../helpers"
 
 export default class Vote {
-  #connector: IDisputableVotingConnector
+  #connector: DisputableVotingConnector
 
   readonly id: string
   readonly votingId: string
@@ -51,7 +51,7 @@ export default class Vote {
   readonly executionDelay: string
   readonly casts?: CastVoteData[]
 
-  constructor(data: VoteData, connector: IDisputableVotingConnector) {
+  constructor(data: VoteData, connector: DisputableVotingConnector) {
     this.#connector = connector
 
     this.id = data.id
