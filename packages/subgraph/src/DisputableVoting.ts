@@ -179,7 +179,7 @@ export function loadOrCreateVoting(
 
     voting = new DisputableVotingEntity(votingAddress.toHexString())
     voting.dao = votingApp.kernel()
-    voting.representativeManager = votingApp.representativeManager()
+    voting.representativeManager = votingApp.representativeManager().toHexString()
     const token = votingApp.try_token()
     if (token.reverted) {
       voting.token = buildERC20(

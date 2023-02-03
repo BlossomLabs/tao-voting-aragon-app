@@ -16,7 +16,7 @@ type TaoVoting @entity {
   setting: Setting
   votes: [Vote!] @derivedFrom(field: "voting")
   voters: [Voter!] @derivedFrom(field: "voting")
-  representativeManager: Bytes
+  representativeManager: TaoVoting
 }
 
 type Vote @entity {
