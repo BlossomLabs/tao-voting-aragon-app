@@ -10,7 +10,9 @@
     "manifest-gnosis": "scripts/build-manifest.sh gnosis",
     "deploy-mainnet": "scripts/deploy.sh blossomlabs bl-tao-voting mainnet",
     "deploy-mainnet-staging": "env STAGING=true scripts/deploy.sh blossomlabs bl-tao-voting mainnet",
-    "deploy-gnosis": "scripts/deploy.sh blossomlabs bl-tao-voting gnosis"
+    "deploy-gnosis": "scripts/deploy.sh blossomlabs bl-tao-voting gnosis",
+    "create-local": "graph create tao-voting --node http://127.0.0.1:8020",
+    "deploy-local": "graph deploy tao-voting --ipfs http://127.0.0.1:5001 --node http://127.0.0.1:8020"
   },
   "devDependencies": {
     "@graphprotocol/graph-cli": "^0.35.0",
