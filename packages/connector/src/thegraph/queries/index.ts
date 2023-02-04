@@ -151,7 +151,7 @@ export const ALL_VOTES = (type: string) => gql`
   ${type} Votes($disputableVoting: String!, $first: Int!, $skip: Int!) {
     votes(where: {
       voting: $disputableVoting
-    }, orderBy: startDate, orderDirection: asc, first: $first, skip: $skip) {
+    }, orderBy: voteId, orderDirection: desc, first: $first, skip: $skip) {
       id
       voting { 
         id 
