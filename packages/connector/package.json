@@ -1,6 +1,6 @@
 {
   "name": "@blossom-labs/connect-bl-tao-voting",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "license": "LGPL-3.0-or-later",
   "description": "Access and interact with Aragon Tao Voting app.",
   "author": "Blossom Labs",

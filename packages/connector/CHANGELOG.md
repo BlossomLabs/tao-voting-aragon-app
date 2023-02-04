@@ -1,5 +1,11 @@
 # @blossom-labs/connect-bl-tao-voting
 
+## 0.2.1
+
+### Patch Changes
+
+- c27c56b: Order votes by voteId and desc ordering
+
 ## 0.2.0
 
 ### Minor Changes
