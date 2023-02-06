@@ -1,5 +1,14 @@
 # @blossom-labs/connect-bl-tao-voting
 
+## 0.3.1
+
+### Patch Changes
+
+- `Vote` changes:
+
+  - Add execution pending status
+  - Add vote has action checker method
+
 ## 0.3.0
 
 ### Minor Changes
