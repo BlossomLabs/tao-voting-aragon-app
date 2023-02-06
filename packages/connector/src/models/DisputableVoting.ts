@@ -25,8 +25,8 @@ export default class DisputableVoting {
     this.address = app.address;
   }
 
-  async disconnect() {
-    await this.#connector.disconnect();
+  disconnect(): Promise<void> {
+    return this.#connector.disconnect();
   }
 
   async id(): Promise<string> {

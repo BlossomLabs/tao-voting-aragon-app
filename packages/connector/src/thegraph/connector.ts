@@ -22,7 +22,7 @@ import {
   parseCastVotes,
 } from "./parsers"
 
-export function subgraphUrlFromChainId(chainId: number) {
+export function subgraphUrlFromChainId(chainId: number): string | null {
   if (chainId === 1) {
     return "https://api.thegraph.com/subgraphs/name/blossomlabs/aragon-bl-tao-voting-mainnet"
   }
@@ -42,7 +42,7 @@ export default class DisputableVotingConnectorTheGraph
   implements DisputableVotingConnector
 {
   #gql: GraphQLWrapper
-  #ethersProvider: ethersProviders.Provider
+  ethersProvider: ethersProviders.Provider
 
   constructor(
     config: DisputableVotingConnectorTheGraphConfig,
@@ -59,10 +59,10 @@ export default class DisputableVotingConnectorTheGraph
       verbose: config.verbose,
     })
 
-    this.#ethersProvider = provider
+    this.ethersProvider = provider
   }
 
-  async disconnect() {
+  async disconnect(): Promise<void> {
     this.#gql.close()
   }
 
@@ -269,7 +269,7 @@ export default class DisputableVotingConnectorTheGraph
     return this.#gql.performQueryWithParser(
       queries.GET_ERC20("query"),
       { tokenAddress },
-      (result: QueryResult) => parseERC20(result, this.#ethersProvider)
+      (result: QueryResult) => parseERC20(result, this.ethersProvider)
     )
   }
 
@@ -281,7 +281,7 @@ export default class DisputableVotingConnectorTheGraph
       queries.GET_ERC20("subscription"),
       { tokenAddress },
       callback,
-      (result: QueryResult) => parseERC20(result, this.#ethersProvider)
+      (result: QueryResult) => parseERC20(result, this.ethersProvider)
     )
   }
 }

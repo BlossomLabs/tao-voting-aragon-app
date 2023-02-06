@@ -1,93 +1,54 @@
 import gql from "graphql-tag";
+import * as fragments from "./fragments";
 
 export const GET_DISPUTABLE_VOTING = (type: string) => gql`
+  ${fragments.TOKEN_FRAGMENT}
+  ${fragments.SETTING_FRAGMENT}
   ${type} DisputableVoting($disputableVoting: String!) {
     taoVoting(id: $disputableVoting) {
       id
       dao
-      representativeManager
-      token {
+      representativeManager {
         id
-        name
-        symbol
-        decimals
+      }
+      token {
+        ...Token_token
       }
       setting {
-        id
-        settingId
-        voteTime
-        supportRequiredPct
-        minimumAcceptanceQuorumPct
-        delegatedVotingPeriod
-        quietEndingPeriod
-        quietEndingExtension
-        executionDelay
-        createdAt
-        voting {
-          id
-        }
+        ...Setting_setting
       }
     }
   }
 `;
 
 export const GET_CURRENT_SETTING = (type: string) => gql`
+  ${fragments.SETTING_FRAGMENT}
   ${type} DisputableVoting($disputableVoting: String!) {
     taoVoting(id: $disputableVoting) {
+      id
       setting {
-        id
-        settingId
-        voteTime
-        supportRequiredPct
-        minimumAcceptanceQuorumPct
-        delegatedVotingPeriod
-        quietEndingPeriod
-        quietEndingExtension
-        executionDelay
-        createdAt
-        voting {
-          id
-        }
+        ...Setting_setting
       }
     }
   }
 `;
 
 export const GET_SETTING = (type: string) => gql`
+  ${fragments.SETTING_FRAGMENT}
   ${type} Setting($settingId: String!) {
     setting(id: $settingId) {
-      id
-      settingId
-      voteTime
-      supportRequiredPct
-      minimumAcceptanceQuorumPct
-      delegatedVotingPeriod
-      quietEndingPeriod
-      quietEndingExtension
-      executionDelay
-      createdAt
-      voting {
-        id
-      }
+      ...Setting_setting
     }
   }
 `;
 
 export const ALL_SETTINGS = (type: string) => gql`
+  ${fragments.SETTING_FRAGMENT}
   ${type} Settings($disputableVoting: String!, $first: Int!, $skip: Int!) {
     settings(where: {
       voting: $disputableVoting
     }, first: $first, skip: $skip) {
-      id
-      settingId
-      voteTime
-      supportRequiredPct
-      minimumAcceptanceQuorumPct
-      delegatedVotingPeriod
-      quietEndingPeriod
-      quietEndingExtension
-      executionDelay
-      createdAt
+      ...Setting_setting
       voting {
         id
       }
@@ -96,15 +57,16 @@ export const ALL_SETTINGS = (type: string) => gql`
 `;
 
 export const GET_VOTE = (type: string) => gql`
+  ${fragments.TOKEN_FRAGMENT}
+  ${fragments.SETTING_FRAGMENT}
+  ${fragments.CAST_VOTES_FRAGMENT}
   ${type} Vote($voteId: String!) {
     vote(id: $voteId) {
       id
       voting { 
         id 
         token {
-          id
-          symbol  
-          decimals
+          ...Token_token
         }
       }
       voteId
@@ -113,14 +75,7 @@ export const GET_VOTE = (type: string) => gql`
       context
       status
       setting { 
-        id 
-        voteTime
-        supportRequiredPct
-        minimumAcceptanceQuorumPct
-        delegatedVotingPeriod
-        quietEndingPeriod
-        quietEndingExtension
-        executionDelay
+        ...Setting_setting
       }
       startDate
       totalPower
@@ -133,21 +88,16 @@ export const GET_VOTE = (type: string) => gql`
       executedAt
       isAccepted
       castVotes {
-        id
-        voter {
-          id
-          address
-        }
-        caster
-        supports
-        stake
-        createdAt
+        ...CastVotes_castVotes
       }
     }
   }
 `;
 
 export const ALL_VOTES = (type: string) => gql`
+  ${fragments.TOKEN_FRAGMENT}
+  ${fragments.SETTING_FRAGMENT}
+  ${fragments.CAST_VOTES_FRAGMENT}
   ${type} Votes($disputableVoting: String!, $first: Int!, $skip: Int!) {
     votes(where: {
       voting: $disputableVoting
@@ -156,9 +106,7 @@ export const ALL_VOTES = (type: string) => gql`
       voting { 
         id 
         token {
-          id
-          symbol
-          decimals
+          ...Token_token
         }
       }
       voteId
@@ -167,14 +115,7 @@ export const ALL_VOTES = (type: string) => gql`
       context
       status
       setting { 
-        id 
-        voteTime
-        supportRequiredPct
-        minimumAcceptanceQuorumPct
-        delegatedVotingPeriod
-        quietEndingPeriod
-        quietEndingExtension
-        executionDelay
+        ...Setting_setting
       }
       startDate
       totalPower
@@ -186,102 +127,55 @@ export const ALL_VOTES = (type: string) => gql`
       script
       isAccepted
       castVotes {
-        id
-        voter {
-          id
-          address
-        }
-        caster
-        supports
-        stake
-        createdAt
+        ...CastVotes_castVotes
       }
     }
   }
 `;
 
 export const GET_CAST_VOTE = (type: string) => gql`
+  ${fragments.CAST_VOTES_FRAGMENT}
   ${type} CastVote($castVoteId: String!) {
     castVote(id: $castVoteId) {
-      id
-      vote { 
-        id 
-      }
-      voter { 
-        id
-      }
-      caster
-      supports
-      stake
-      createdAt
+      ...CastVotes_castVotes
     }
   }
 `;
 
 export const ALL_CAST_VOTES = (type: string) => gql`
+  ${fragments.CAST_VOTES_FRAGMENT}
   ${type} CastVotes($voteId: ID!, $first: Int!, $skip: Int!) {
     castVotes(where: {
       vote: $voteId
     }, first: $first, skip: $skip) {
-      id
-      vote { 
-        id 
-      }
-      voter { 
-        id 
-      }
-      caster
-      supports
-      stake
-      createdAt
+      ...CastVotes_castVotes
     }
   }
 `;
 
 export const GET_VOTER = (type: string) => gql`
+  ${fragments.VOTER_FRAGMENT}
   ${type} Voter($votingId: String!, $voterAddress: String!) {
     taoVoting(id: $votingId) {
-    id
-    voters(where: { address: $voterAddress }) {
       id
-      address
-      representative {
-        address
+      voters(where: { address: $voterAddress }) {
+        ...Voter_voter
       }
-      representativeFor {
-        address
-      }
-      voting {
-        id
-      }
-    }
-    
-    representativeManager {
-      voters(where:{ address: $voterAddress}) {
-        id
-        address
-        representative {
-          address
-        }
-        representativeFor {
-          address
-        }
-        voting {
-          id
+      
+      representativeManager {
+        voters(where:{ address: $voterAddress}) {
+          ...Voter_voter
         }
       }
     }
-  }
   }
 `;
 
 export const GET_ERC20 = (type: string) => gql`
   ${type} ERC20($tokenAddress: String!) {
     erc20(id: $tokenAddress) {
-      id
-      name
-      symbol
-      decimals
+      ...Token_token
     }
   }
+  ${fragments.TOKEN_FRAGMENT}
 `;

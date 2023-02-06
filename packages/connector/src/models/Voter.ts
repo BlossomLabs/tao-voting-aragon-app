@@ -4,8 +4,8 @@ export default class Voter {
   readonly id: string
   readonly votingId: string
   readonly address: string
-  readonly representative: string
-  readonly representativeFor: string
+  readonly representative: { address: string }
+  readonly representativeFor: { address: string}[]
 
   constructor(data: VoterData) {
     this.id = data.id

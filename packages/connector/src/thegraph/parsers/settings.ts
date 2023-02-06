@@ -15,7 +15,6 @@ function buildSetting(setting: any): Setting {
     quietEndingExtension,
     executionDelay,
     createdAt,
-    voting,
   } = setting
 
   const settingData: SettingData = {
@@ -29,7 +28,6 @@ function buildSetting(setting: any): Setting {
     quietEndingExtension,
     executionDelay,
     createdAt,
-    votingId: voting.id,
   }
 
   return new Setting(settingData)

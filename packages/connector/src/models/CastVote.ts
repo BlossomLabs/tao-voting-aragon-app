@@ -21,6 +21,7 @@ export default class CastVote {
   readonly id: string;
   readonly voteId: string;
   readonly voterId: string;
+  readonly voterAddress: string
   readonly caster: string;
   readonly supports: boolean;
   readonly stake: string;
@@ -32,6 +33,7 @@ export default class CastVote {
     this.id = data.id;
     this.voteId = data.voteId;
     this.voterId = data.voterId;
+    this.voterAddress = data.voterAddress
     this.caster = data.caster;
     this.supports = data.supports;
     this.stake = data.stake;

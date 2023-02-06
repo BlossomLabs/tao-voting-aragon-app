@@ -1,9 +1,9 @@
-import { QueryResult } from "@1hive/connect-thegraph"
+import { QueryResult } from "@1hive/connect-thegraph";
 
-import Vote from "../../models/Vote"
-import { VoteData } from "../../types"
+import Vote from "../../models/Vote";
+import { CastVoteData, DisputableVotingConnector, VoteData } from "../../types";
 
-function buildVote(vote: any, connector: any): Vote {
+function buildVote(vote: any, connector: DisputableVotingConnector): Vote {
   const {
     id,
     voting,
@@ -24,7 +24,19 @@ function buildVote(vote: any, connector: any): Vote {
     executedAt,
     isAccepted,
     castVotes,
-  } = vote
+  } = vote;
+  const { decimals, name, symbol } = vote.voting.token;
+  const {
+    voteTime,
+    minimumAcceptanceQuorumPct,
+    supportRequiredPct,
+    delegatedVotingPeriod,
+    quietEndingExtension,
+    quietEndingPeriod,
+    executionDelay,
+    createdAt,
+    settingId,
+  } = setting;
 
   const voteData: VoteData = {
     id,
@@ -44,39 +56,67 @@ function buildVote(vote: any, connector: any): Vote {
     script,
     executedAt,
     isAccepted,
-    tokenId: voting.token.id,
-    tokenSymbol: voting.token.symbol,
-    tokenDecimals: voting.token.decimals,
-    settingId: setting.id,
-    duration: setting.voteTime,
-    minimumAcceptanceQuorumPct: setting.minimumAcceptanceQuorumPct,
-    supportRequiredPct: setting.supportRequiredPct,
-    delegatedVotingPeriod: setting.delegatedVotingPeriod,
-    quietEndingExtension: setting.quietEndingExtension,
-    quietEndingPeriod: setting.quietEndingPeriod,
-    executionDelay: setting.executionDelay,
-    castVotes,
-  }
+    setting: {
+      id: setting.id,
+      voteTime,
+      minimumAcceptanceQuorumPct,
+      supportRequiredPct,
+      delegatedVotingPeriod,
+      quietEndingExtension,
+      quietEndingPeriod,
+      executionDelay,
+      createdAt,
+      settingId,
+    },
+    votingToken: {
+      decimals,
+      id: vote.voting.token.id,
+      name,
+      symbol,
+    },
+    castVotes: Array.isArray(castVotes)
+      ? castVotes.map<CastVoteData>(
+          ({
+            id,
+            voter,
+            vote,
+            caster,
+            supports,
+            stake,
+            createdAt,
+          }) => ({
+            id,
+            voteId: vote.id,
+            voterId: voter.id,
+            voterAddress: voter.address,
+            caster,
+            supports,
+            stake,
+            createdAt,
+          })
+        )
+      : undefined,
+  };
 
-  return new Vote(voteData, connector)
+  return new Vote(voteData, connector);
 }
 
-export function parseVote(result: QueryResult, connector: any): Vote {
-  const vote = result.data.vote
+export function parseVote(result: QueryResult, connector: DisputableVotingConnector): Vote {
+  const vote = result.data.vote;
 
   if (!vote) {
-    throw new Error("Unable to parse vote.")
+    throw new Error("Unable to parse vote.");
   }
 
-  return buildVote(vote, connector)
+  return buildVote(vote, connector);
 }
 
-export function parseVotes(result: QueryResult, connector: any): Vote[] {
-  const votes = result.data.votes
+export function parseVotes(result: QueryResult, connector: DisputableVotingConnector): Vote[] {
+  const votes = result.data.votes;
 
   if (!votes) {
-    throw new Error("Unable to parse votes.")
+    throw new Error("Unable to parse votes.");
   }
 
-  return votes.map((vote: any) => buildVote(vote, connector))
+  return votes.map((vote: any) => buildVote(vote, connector));
 }

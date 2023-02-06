@@ -1,4 +1,5 @@
 import { SubscriptionCallback, SubscriptionHandler } from '@1hive/connect-types'
+import { providers as ethersProvider } from 'ethers'
 
 import ERC20 from './models/ERC20'
 import Vote from './models/Vote'
@@ -11,7 +12,7 @@ export interface TaoVotingData {
   dao: string
   token: ERC20Data
   setting: SettingData
-  representativeManager: string
+  representativeManager: { address: string }
 }
 
 export interface VoteData {
@@ -20,11 +21,8 @@ export interface VoteData {
   voteId: string
   creator: string
   originalCreator: string
-  duration: string
-  quietEndingExtension: string
   context: string
   status: string
-  settingId: string
   startDate: string
   totalPower: string
   snapshotBlock: string
@@ -34,22 +32,17 @@ export interface VoteData {
   quietEndingSnapshotSupport: string
   script: string
   executedAt: string
-  tokenId: string
-  tokenSymbol: string
-  tokenDecimals: string
   isAccepted: boolean
-  minimumAcceptanceQuorumPct: string
-  delegatedVotingPeriod: string
-  supportRequiredPct: string
-  quietEndingPeriod: string
-  executionDelay: string
   castVotes?: CastVoteData[]
+  setting: SettingData
+  votingToken: ERC20Data
 }
 
 export interface CastVoteData {
   id: string
   voteId: string
   voterId: string
+  voterAddress: string
   caster: string
   supports: boolean
   stake: string
@@ -60,20 +53,19 @@ export interface VoterData {
   id: string
   votingId: string
   address: string
-  representative: string
-  representativeFor: string
+  representative: {address: string}
+  representativeFor: { address: string }[]
 }
 
 export interface SettingData {
   id: string
-  votingId: string
   settingId: string
   voteTime: string
   supportRequiredPct: string
   minimumAcceptanceQuorumPct: string
   delegatedVotingPeriod: string
-  quietEndingPeriod: string
   quietEndingExtension: string
+  quietEndingPeriod: string
   executionDelay: string
   createdAt: string
 }
@@ -86,6 +78,7 @@ export interface ERC20Data {
 }
 
 export interface DisputableVotingConnector {
+  ethersProvider: ethersProvider.Provider
   disconnect(): Promise<void>
   disputableVoting(disputableVoting: string): Promise<TaoVotingData>
   onDisputableVoting(
