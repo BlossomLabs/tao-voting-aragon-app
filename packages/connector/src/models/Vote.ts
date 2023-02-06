@@ -18,6 +18,9 @@ import {
   currentTimestampEvm,
 } from "../helpers";
 
+const EMPTY_CALLSCRIPT = "0x00000001";
+const EMPTY_CALLSCRIPT_UTF8 = "0x30783030303030303031";
+
 export default class Vote {
   #connector: DisputableVotingConnector;
 
@@ -46,7 +49,10 @@ export default class Vote {
     this.#connector = connector;
 
     this.setting = new Setting(data.setting);
-    this.votingToken = new ERC20(data.votingToken, this.#connector.ethersProvider);
+    this.votingToken = new ERC20(
+      data.votingToken,
+      this.#connector.ethersProvider
+    );
     this.id = data.id;
     this.votingId = data.votingId;
     this.voteId = data.voteId;
@@ -70,6 +76,14 @@ export default class Vote {
   get hasEnded(): boolean {
     const currentTimestamp = currentTimestampEvm();
     return currentTimestamp.gte(this.endDate);
+  }
+
+  get hasAction(): boolean {
+    const script = this.script;
+
+    return Boolean(
+      script && script !== EMPTY_CALLSCRIPT && script !== EMPTY_CALLSCRIPT_UTF8
+    );
   }
 
   get endDate(): string {
@@ -130,7 +144,10 @@ export default class Vote {
   get status(): string {
     if (this.hasEnded) {
       if (this.voteStatus === "Scheduled") {
-        return this.isAccepted ? "Accepted" : "Rejected";
+        if (this.isAccepted) {
+          return this.hasAction ? "PendingExecution" : "Accepted";
+        }
+        return "Rejected";
       }
     }
     return this.voteStatus;
@@ -182,7 +199,10 @@ export default class Vote {
   }
 
   async formattedVotingPower(voterAddress: Address): Promise<string> {
-    const balance = await this.votingToken.balanceAt(voterAddress, this.snapshotBlock);
+    const balance = await this.votingToken.balanceAt(
+      voterAddress,
+      this.snapshotBlock
+    );
     return formatBn(balance, this.votingToken.decimals);
   }
 
