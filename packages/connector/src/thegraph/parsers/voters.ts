@@ -3,7 +3,6 @@ import { QueryResult } from "@1hive/connect-thegraph";
 import Voter from "../../models/Voter";
 
 export function parseVoter(result: QueryResult): Voter {
-  console.log(result)
   const taoVoting = result.data.taoVoting;
 
   if (!taoVoting) {
