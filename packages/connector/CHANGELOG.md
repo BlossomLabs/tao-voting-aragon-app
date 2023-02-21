@@ -1,5 +1,11 @@
 # @blossom-labs/connect-bl-tao-voting
 
+## 0.3.2
+
+### Patch Changes
+
+- Fix voter parser
+
 ## 0.3.1
 
 ### Patch Changes
