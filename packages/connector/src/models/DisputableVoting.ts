@@ -126,7 +126,10 @@ export default class DisputableVoting {
   }
 
   async voter(voterAddress: Address): Promise<Voter> {
-    return this.#connector.voter(this.address, voterAddress);
+    return this.#connector.voter(
+      this.address.toLowerCase(),
+      voterAddress.toLowerCase()
+    );
   }
 
   onVoter(
@@ -134,7 +137,11 @@ export default class DisputableVoting {
     callback?: SubscriptionCallback<Voter>
   ): SubscriptionResult<Voter> {
     return subscription<Voter>(callback, (callback) =>
-      this.#connector.onVoter(this.address, voterAddress, callback)
+      this.#connector.onVoter(
+        this.address.toLowerCase(),
+        voterAddress.toLowerCase(),
+        callback
+      )
     );
   }
 
