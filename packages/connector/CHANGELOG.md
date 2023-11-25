@@ -1,5 +1,11 @@
 # @blossom-labs/connect-bl-tao-voting
 
+## 0.3.4
+
+### Patch Changes
+
+- d9962c7: Add support to Optimism
+
 ## 0.3.3
 
 ### Patch Changes
