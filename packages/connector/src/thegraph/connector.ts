@@ -26,9 +26,13 @@ export function subgraphUrlFromChainId(chainId: number): string | null {
   if (chainId === 1) {
     return "https://api.thegraph.com/subgraphs/name/blossomlabs/aragon-bl-tao-voting-mainnet"
   }
+  if (chainId === 10) {
+    return "https://api.thegraph.com/subgraphs/name/blossomlabs/aragon-bl-tao-voting-optimism"
+  }
   if (chainId === 100) {
     return "https://api.thegraph.com/subgraphs/name/blossomlabs/aragon-bl-tao-voting-gnosis"
   }
+
   return null
 }
 
