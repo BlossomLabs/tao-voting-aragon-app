@@ -8,9 +8,11 @@
     "manifest-mainnet": "scripts/build-manifest.sh mainnet",
     "manifest-mainnet-staging": "env STAGING=true scripts/build-manifest.sh mainnet",
     "manifest-gnosis": "scripts/build-manifest.sh gnosis",
+    "manifest-optimism": "scripts/build-manifest.sh optimism",
     "deploy-mainnet": "scripts/deploy.sh blossomlabs bl-tao-voting mainnet",
     "deploy-mainnet-staging": "env STAGING=true scripts/deploy.sh blossomlabs bl-tao-voting mainnet",
     "deploy-gnosis": "scripts/deploy.sh blossomlabs bl-tao-voting gnosis",
+    "deploy-optimism": "scripts/deploy.sh blossomlabs bl-tao-voting optimism",
     "create-local": "graph create tao-voting --node http://127.0.0.1:8020",
     "deploy-local": "graph deploy tao-voting --ipfs http://127.0.0.1:5001 --node http://127.0.0.1:8020"
   },
