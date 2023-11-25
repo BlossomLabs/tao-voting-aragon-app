@@ -1,0 +1,15 @@
+{
+  "network": "optimism",
+  "dataSources": {
+    "OrganizationFactories": [
+      {
+        "name": "DAOFactory@0.8.1",
+        "address": "0x0a42106615233D0E6F9811d0cBb7ddC83170Fe5E",
+        "startBlock": "107569173" 
+      } 
+    ],
+    "LegacyOrganizationTemplates": [],
+    "TokenFactories": [],
+    "Tokens": []
+  }
+}
